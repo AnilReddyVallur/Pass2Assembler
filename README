@@ -1,0 +1,250 @@
+Pass2Assembler
+==============
+
+This c code implements the pass 2 assembler code for sic/xe machine
+
+Input 
+
+** START 1080
+** STL TEN
+** LDA ONE
+** STA TWO
+TWO RESW 3
+ONE WORD 2
+TEN RESW 5
+** END **
+
+
+Opcode table
+
+START *
+STL 17
+LDA 00
+STA 14
+END *
+
+Symbol table
+
+TWO	59
+
+ONE	        68
+
+TEN	        71
+
+Output of pass 2
+
+**	START	50
+**	
+STL	TEN	50	1771
+**	
+LDA	ONE	53	0068
+**	
+STA	TWO	56	1459
+
+TWO	RESW	3	59	3
+
+ONE	WORD	2	68	2
+
+TEN	RESW	5	71	5
+
+**	END	**
+
+Output of the pass 2 assembler
+
+**	START	50	**	
+STL	TEN         53	**	
+LDA	ONE        56	**	
+STA	TWO       59	
+TWO RESW	36	8	
+ONE	WORD	27	1	
+TEN	RESW	58	6	
+**	END	**
+
+Pass 1 c code
+
+#include<stdio.h>
+#include<string.h>
+int main()
+{
+char opcode[10],mne[3],operand[10],label[10],code[10];
+int loc,start,len;
+FILE *fp1,*fp2,*fp3,*fp4;
+fp1=fopen("input.dat","r");
+fp2=fopen("sym.dat","w");
+fp3=fopen("out.dat","w");
+fp4=fopen("optab.dat","r");
+fscanf(fp1,"%s%s%s",label,opcode,operand);
+if(strcmp(opcode,"START")==0)
+{
+start=atoi(operand);
+loc=start;
+fprintf(fp3,"\t%s\t%s\t%s\n",label,opcode,operand);
+fscanf(fp1,"%s%s%s",label,opcode,operand);
+}
+else
+loc=0;
+while(strcmp(opcode,"END")!=0)
+{
+fprintf(fp3,"%d\t",loc);
+if(strcmp(label,"**")!=0)
+fprintf(fp2,"%s\t%d\n",label,loc);
+fscanf(fp4,"%s%s",code,mne);
+while(strcmp(code,"END")!=0)
+{
+if(strcmp(opcode,code)==0)
+{
+loc+=3;
+break;
+}
+fscanf(fp4,"%s%s",code,mne);
+}
+if(strcmp(opcode,"WORD")==0)
+loc+=3;
+else if(strcmp(opcode,"RESW")==0)
+loc+=(3*(atoi(operand)));
+else if(strcmp(opcode,"RESB")==0)
+loc+=(atoi(operand));
+else if(strcmp(opcode,"BYTE")==0)
+++loc;
+fprintf(fp3,"%s\t%s\t%s\n",label,opcode,operand);
+fscanf(fp1,"%s%s%s",label,opcode,operand);
+}
+fprintf(fp3,"%d\t%s\t%s\t%s\n",loc,label,opcode,operand);
+len=loc-start;
+printf("Length of the program is %d",len);
+fclose(fp1);
+fclose(fp2);
+fclose(fp3);
+fclose(fp4);
+return 0;
+}
+
+pass 2 c code
+
+#include<stdio.h>
+#include<ctype.h>
+#include<string.h>
+#include<stdlib.h>
+
+int main()
+{
+	printf("WELCOME");
+	FILE *fp1,*fp2,*fp3,*fp4;
+	char label[100],opcode[100],operand[100],symbol[100],code[100];
+	char mnemonic[50],character,add[100],objectcode[100];
+	int flag,flag1,locctr,location,loc;
+	int err=0;
+	fp1=fopen("out.dat","r");
+	fp2=fopen("p2out.dat","w");
+	fp3=fopen("optab.dat","r");
+	fp4=fopen("sym.dat","r");
+	printf("files opened");
+	if(fp1==NULL)
+	{
+		printf("The file cannot be open");
+	}
+	if(fp2==NULL)
+	{
+		printf("The file cannot be open");
+	}
+	if(fp3==NULL)
+	{
+		printf("The file cannot be open");
+	}
+	if(fp4==NULL)
+	{
+		printf("The file cannot be open");
+	}
+	printf("ALL NOT NULL");
+	fscanf(fp1,"%s%s%s",label,opcode,operand);
+	if(strcmp(opcode,"START")==0)
+	{
+		fprintf(fp2,"%s\t%s\t%s\n",label,opcode,operand);
+		fscanf(fp1,"%d%s%s%s",&locctr,label,opcode,operand);
+	}
+	printf("ADDRESS FOUND");
+	int xxx=1;
+	while(strcmp(opcode,"END")!=0)
+	{
+		flag=0;
+		fscanf(fp3,"%s%s",code,mnemonic);
+		while(strcmp(code,"END")!=0)
+		{
+			if((strcmp(opcode,code)==0)&&(strcmp(mnemonic,"*"))!=0)
+			{
+				flag=1;
+				break;
+			}
+		fscanf(fp3,"%s%s",code,mnemonic);
+		//printf("%s",code);
+		}
+		//printf("%d",xxx++);
+		if(flag==1)
+		{	
+		//	printf("%d",xxx++);
+			flag1=0;
+			rewind(fp4);
+			while(!feof(fp4))
+			{
+				fscanf(fp4,"%s%d",symbol,&loc);
+				if(strcmp(symbol,operand)==0)
+				{
+					//printf("\nSPRINTF BEGINS");
+					sprintf(add,"%d",loc);
+					//printf("SORINT ENDS add =%s loc=%d\n",add,loc);
+                        		strcpy(objectcode,strcat(mnemonic,add));
+					printf("obj code of if %s",objectcode);
+					break;
+					/*flag1=1;// EDITED flag =1
+					printf("\nSYMBOL FOUND %s",operand);
+					break;*/
+				}
+			}/*
+			if(flag1==1)
+			{
+			//itoa(loc,add,10);
+			sprintf(add,"%d",loc);
+			strcpy(objectcode,strcat(mnemonic,add));
+			}
+			else//eddited here
+			{
+			//	add ="0";
+				err=1;
+			}*/
+		}
+		else if(strcmp(opcode,"RESW")==0 || strcmp(opcode,"WORD")==0)
+		{
+		/*	if((operand[0]=='C')||(operand[0]=='X'))
+			{
+				character=operand[2];
+				//itoa(character,add,16);
+				sprintf(add,"%d",character);//edited
+				strcpy(objectcode,add);
+			}
+			else
+		*/
+		//	{
+			printf("ELSE ENTERED\n");
+			sprintf(add,"%s",operand);
+			printf("add is %s, operand is %s",add,operand);
+	//		itoa(atoi(operand),add,10);
+			strcpy(objectcode,add);
+			printf("\nobj code of else %s",objectcode);
+		//	}
+		}
+		strcat(objectcode,"\0");
+		fprintf(fp2,"%s\t%s\t%s\t%d\t%s\n",label,opcode,operand,locctr,objectcode);
+		fscanf(fp1,"%d%s%s%s",&locctr,label,opcode,operand);
+	}
+	fprintf(fp2,"%s\t%s\t%s\n",label,opcode,operand,locctr);
+	fclose(fp1);
+	fclose(fp2);
+	fclose(fp3);
+	fclose(fp4);
+	printf("SUCC");
+	return 1;
+}
+
+
+
+
